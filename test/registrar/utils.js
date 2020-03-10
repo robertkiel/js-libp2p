@@ -26,7 +26,7 @@ module.exports.createMockConnection = async (properties = {}) => {
         upgraded: Date.now()
       },
       direction: 'outbound',
-      encryption: '/secio/1.0.0',
+      encryption: '/noise/1.0.0',
       multiplexer: '/mplex/6.7.0',
       status: 'open'
     },
