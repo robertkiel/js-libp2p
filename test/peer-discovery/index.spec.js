@@ -9,7 +9,6 @@ const sinon = require('sinon')
 const defer = require('p-defer')
 const mergeOptions = require('merge-options')
 
-const MulticastDNS = require('libp2p-mdns')
 const WebRTCStar = require('libp2p-webrtc-star')
 
 const Libp2p = require('../../src')
@@ -48,22 +47,6 @@ describe('peer discovery', () => {
       libp2p.start()
       await deferred.promise
       expect(spy.getCall(0).args).to.eql([remotePeerInfo])
-    })
-
-    it('should ignore self on discovery', async () => {
-      libp2p = new Libp2p(mergeOptions(baseOptions, {
-        peerInfo,
-        modules: {
-          peerDiscovery: [MulticastDNS]
-        }
-      }))
-
-      await libp2p.start()
-      const discoverySpy = sinon.spy()
-      libp2p.on('peer:discovery', discoverySpy)
-      libp2p._discovery.get('mdns').emit('peer', libp2p.peerInfo)
-
-      expect(discoverySpy.called).to.eql(false)
     })
 
     it('should stop discovery on libp2p start/stop', async () => {
