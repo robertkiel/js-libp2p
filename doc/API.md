@@ -364,13 +364,13 @@ Iterates over all peer routers in series to find the given peer. If the DHT is e
 
 | Type | Description |
 |------|-------------|
-| `Promise<PeerInfo>` | Peer info of a known peer |
+| `Promise<{ id: CID, addrs: Multiaddr[] }>` | Peer data of a known peer |
 
 #### Example
 
 ```js
 // ...
-const peerInfo = await libp2p.peerRouting.findPeer(peerId, options)
+const peerData = await libp2p.peerRouting.findPeer(peerId, options)
 ```
 
 ### contentRouting.findProviders
@@ -393,14 +393,14 @@ Once a content router succeeds, the iteration will stop. If the DHT is enabled, 
 
 | Type | Description |
 |------|-------------|
-| `AsyncIterator<PeerInfo>` |  Async iterator for [`PeerInfo`][peer-info] |
+| `AsyncIterable<{ id: CID, addrs: Multiaddr[] }` |  Async iterator for peer data |
 
 #### Example
 
 ```js
 // Iterate over the providers found for the given cid
 for await (const provider of libp2p.contentRouting.findProviders(cid)) {
-  console.log(provider)
+  console.log(provider.id, provider.addrs)
 }
 ```
 

@@ -3,7 +3,6 @@
 const mafmt = require('mafmt')
 const multiaddr = require('multiaddr')
 const PeerId = require('peer-id')
-const PeerInfo = require('peer-info')
 const withIs = require('class-is')
 const { CircuitRelay: CircuitPB } = require('./protocol')
 
@@ -107,7 +106,7 @@ class Circuit {
     const destinationPeer = PeerId.createFromCID(destinationAddr.getPeerId())
 
     let disconnectOnFailure = false
-    let relayConnection = this._registrar.getConnection(new PeerInfo(relayPeer))
+    let relayConnection = this._registrar.getConnection(relayPeer)
     if (!relayConnection) {
       relayConnection = await this._dialer.connectToPeer(relayAddr, options)
       disconnectOnFailure = true

@@ -6,9 +6,7 @@ const log = debug('libp2p:peer-store')
 log.error = debug('libp2p:peer-store:error')
 
 const { EventEmitter } = require('events')
-
 const PeerId = require('peer-id')
-const PeerInfo = require('peer-info')
 
 const AddressBook = require('./address-book')
 const ProtoBook = require('./proto-book')
@@ -57,46 +55,32 @@ class PeerStore extends EventEmitter {
    * @returns {Map<string, peerInfo>}
    */
   get peers () {
-    const peerInfos = new Map()
+    const peersData = new Map()
 
     // AddressBook
     for (const [idStr, multiaddrInfos] of this.addressBook.data.entries()) {
-      // TODO: Remove peerInfo and its usage on peer-info deprecate
-      const peerInfo = new PeerInfo(PeerId.createFromCID(idStr))
-
-      multiaddrInfos.forEach((mi) => peerInfo.multiaddrs.add((mi.multiaddr)))
-
-      const protocols = this.protoBook.data.get(idStr) || []
-      protocols.forEach((p) => peerInfo.protocols.add(p))
-
-      peerInfos.set(idStr, peerInfo)
-      // TODO
-      // peerInfos.set(idStr, {
-      //   id: PeerId.createFromCID(idStr),
-      //   multiaddrInfos,
-      //   protocols: this.protoBook.data.get(idStr) || []
-      // })
+      const id = PeerId.createFromCID(idStr)
+      peersData.set(idStr, {
+        id,
+        multiaddrInfos,
+        protocols: this.protoBook.get(id) || []
+      })
     }
 
     // ProtoBook
     for (const [idStr, protocols] of this.protoBook.data.entries()) {
-      // TODO: Remove peerInfo and its usage on peer-info deprecate
-      const peerInfo = peerInfos.get(idStr)
+      const pData = peersData.get(idStr)
 
-      if (!peerInfo) {
-        const peerInfo = new PeerInfo(PeerId.createFromCID(idStr))
-
-        protocols.forEach((p) => peerInfo.protocols.add(p))
-        peerInfos.set(idStr, peerInfo)
-        // peerInfos.set(idStr, {
-        //   id: PeerId.createFromCID(idStr),
-        //   multiaddrInfos: [],
-        //   protocols: protocols
-        // })
+      if (!pData) {
+        peersData.set(idStr, {
+          id: PeerId.createFromCID(idStr),
+          multiaddrInfos: [],
+          protocols: Array.from(protocols)
+        })
       }
     }
 
-    return peerInfos
+    return peersData
   }
 
   /**

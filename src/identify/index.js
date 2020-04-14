@@ -100,7 +100,7 @@ class IdentifyService {
     const connections = []
     let connection
     for (const peer of peerStore.peers.values()) {
-      if (peer.protocols.has(MULTICODEC_IDENTIFY_PUSH) && (connection = this.registrar.getConnection(peer))) {
+      if (peer.protocols.includes(MULTICODEC_IDENTIFY_PUSH) && (connection = this.registrar.getConnection(peer.id))) {
         connections.push(connection)
       }
     }

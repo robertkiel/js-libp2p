@@ -43,6 +43,7 @@ class Libp2p extends EventEmitter {
 
     this.datastore = this._options.datastore
     this.peerInfo = this._options.peerInfo
+    this.peerId = this.peerInfo.id
     this.peerStore = new PeerStore()
 
     this._modules = this._options.modules
@@ -60,7 +61,7 @@ class Libp2p extends EventEmitter {
       metrics: this.metrics,
       onConnection: (connection) => {
         const peerInfo = new PeerInfo(connection.remotePeer)
-        this.registrar.onConnect(peerInfo, connection)
+        this.registrar.onConnect(peerInfo.id, connection)
         this.connectionManager.onConnect(connection)
         this.emit('peer:connect', peerInfo)
 
@@ -72,11 +73,11 @@ class Libp2p extends EventEmitter {
       },
       onConnectionEnd: (connection) => {
         const peerInfo = Dialer.getDialable(connection.remotePeer)
-        this.registrar.onDisconnect(peerInfo, connection)
+        this.registrar.onDisconnect(peerInfo.id, connection)
         this.connectionManager.onDisconnect(connection)
 
         // If there are no connections to the peer, disconnect
-        if (!this.registrar.getConnection(peerInfo)) {
+        if (!this.registrar.getConnection(peerInfo.id)) {
           this.emit('peer:disconnect', peerInfo)
           this.metrics && this.metrics.onPeerDisconnected(peerInfo.id)
         }
@@ -151,7 +152,7 @@ class Libp2p extends EventEmitter {
       const DHT = this._modules.dht
       this._dht = new DHT({
         dialer: this.dialer,
-        peerInfo: this.peerInfo,
+        peerId: this.peerId,
         peerStore: this.peerStore,
         registrar: this.registrar,
         datastore: this.datastore,
@@ -294,7 +295,7 @@ class Libp2p extends EventEmitter {
       const multiaddrs = dialable.multiaddrs.toArray ? dialable.multiaddrs.toArray() : Array.from(dialable.multiaddrs)
       this.peerStore.addressBook.add(dialable.id, multiaddrs)
 
-      connection = this.registrar.getConnection(dialable)
+      connection = this.registrar.getConnection(dialable.id)
     }
 
     if (!connection) {
@@ -427,17 +428,16 @@ class Libp2p extends EventEmitter {
    * Called whenever peer discovery services emit `peer` events.
    * Known peers may be emitted.
    * @private
-   * @param {PeerInfo} peerInfo
+   * @param {PeerDara} peerData
    */
-  _onDiscoveryPeer (peerInfo) {
-    if (peerInfo.id.toB58String() === this.peerInfo.id.toB58String()) {
+  _onDiscoveryPeer (peerData) {
+    if (peerData.id.toB58String() === this.peerId.toB58String()) {
       log.error(new Error(codes.ERR_DISCOVERED_SELF))
       return
     }
 
-    // TODO: once we deprecate peer-info, we should only set if we have data
-    this.peerStore.addressBook.add(peerInfo.id, peerInfo.multiaddrs.toArray())
-    this.peerStore.protoBook.set(peerInfo.id, Array.from(peerInfo.protocols))
+    peerData.multiaddrs && this.peerStore.addressBook.add(peerData.id, peerData.multiaddrs)
+    peerData.protocols && this.peerStore.protoBook.set(peerData.id, peerData.protocols)
   }
 
   /**
@@ -449,7 +449,7 @@ class Libp2p extends EventEmitter {
    */
   async _maybeConnect (peerInfo) {
     // If auto dialing is on and we have no connection to the peer, check if we should dial
-    if (this._config.peerDiscovery.autoDial === true && !this.registrar.getConnection(peerInfo)) {
+    if (this._config.peerDiscovery.autoDial === true && !this.registrar.getConnection(peerInfo.id)) {
       const minPeers = this._options.connectionManager.minPeers || 0
       if (minPeers > this.connectionManager._connections.size) {
         log('connecting to discovered peer %s', peerInfo.id.toB58String())
@@ -485,7 +485,11 @@ class Libp2p extends EventEmitter {
         let discoveryService
 
         if (typeof DiscoveryService === 'function') {
-          discoveryService = new DiscoveryService(Object.assign({}, config, { peerInfo: this.peerInfo, libp2p: this }))
+          discoveryService = new DiscoveryService(Object.assign({}, config, {
+            peerId: this.peerId,
+            multiaddrs: this.peerInfo.multiaddrs.toArray(),
+            libp2p: this
+          }))
         } else {
           discoveryService = DiscoveryService
         }

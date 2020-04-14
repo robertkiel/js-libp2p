@@ -48,10 +48,10 @@ describe('registrar on dial', () => {
     await libp2p.dial(remoteAddr)
     expect(remoteLibp2p.registrar.onConnect.callCount).to.equal(1)
 
-    const libp2pConn = libp2p.registrar.getConnection(remotePeerInfo)
+    const libp2pConn = libp2p.registrar.getConnection(remotePeerInfo.id)
     expect(libp2pConn).to.exist()
 
-    const remoteConn = remoteLibp2p.registrar.getConnection(peerInfo)
+    const remoteConn = remoteLibp2p.registrar.getConnection(peerInfo.id)
     expect(remoteConn).to.exist()
   })
 

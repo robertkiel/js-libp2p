@@ -198,7 +198,7 @@ describe('content-routing', () => {
       }
 
       expect(providers).to.have.length(1)
-      expect(providers[0].id.toB58String()).to.equal(provider)
+      expect(providers[0].id).to.equal(provider)
       expect(mockApi.isDone()).to.equal(true)
     })
 
